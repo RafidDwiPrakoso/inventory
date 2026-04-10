@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\ItemStock;
 use App\Models\ItemCategory;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\Admin\ItemExport;
 
 class ItemController extends Controller
 {
@@ -56,23 +58,25 @@ class ItemController extends Controller
         ]);
 
         $newBroke = $request->input('new_broke_item', 0);
-
         $totalRepairNanti = $item->total_repaired + $newBroke;
 
-        if ($totalRepairNanti > $request->total_stock) {
+        // Cegah lapor rusak melebihi sisa fisik yang ada (Total lama - Rusak lama - Dipinjam)
+        if ($totalRepairNanti + $item->total_borrowed > $item->total_stock) {
+            $maksBisaRusak = $item->total_stock - $item->total_repaired - $item->total_borrowed;
             return back()->withErrors([
-                'new_broke_item' => "Gagal! Total barang rusak ($totalRepairNanti) tidak boleh melebihi total fisik barang."
+                'new_broke_item' => "Gagal! Sisa barang di tempat hanya $maksBisaRusak. Tidak bisa melaporkan rusak lebih dari itu."
             ])->withInput();
         }
 
-        $minimalFisik = $item->total_repaired + $item->total_borrowed;
-
+        // Cegah Admin menurunkan Total Fisik di bawah batas wajar
+        $minimalFisik = $totalRepairNanti + $item->total_borrowed;
         if ($request->total_stock < $minimalFisik) {
             return back()->withErrors([
-                'total_stock' => "Gagal! Total fisik minimal harus $minimalFisik (karena ada $item->total_repaired rusak & $item->total_borrowed sedang dipinjam)."
+                'total_stock' => "Gagal! Total fisik tidak boleh kurang dari $minimalFisik (karena ada $totalRepairNanti rusak & $item->total_borrowed sedang dipinjam)."
             ])->withInput();
         }
 
+        // Jika lolos kedua jebakan di atas, simpan perubahannya!
         if ($newBroke > 0) {
             $item->total_repaired = $totalRepairNanti;
         }
@@ -89,5 +93,10 @@ class ItemController extends Controller
     {
         $lendings = $item->borrowedItems()->with(['staff', 'returnedItem'])->latest()->get();
         return view('admin.items.lending_details', compact('item', 'lendings'));
+    }
+
+    public function export()
+    {
+        return Excel::download(new ItemExport, 'items.xlsx');
     }
 }

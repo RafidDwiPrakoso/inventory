@@ -1,83 +1,81 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\Admin\UserExport;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $users = User::latest()->get();
-        return view('admin.users.index', compact('users'));
+        // Hanya menampilkan user dengan role 'staff'
+        $users = User::where('role', 'staff')->latest()->get();
+        return view('staff.users.index', compact('users'));
     }
 
     public function create()
     {
-        return view('admin.users.create');
+        return view('staff.users.create');
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email',
-            'role' => 'required',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6'
         ]);
 
         User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'role' => $request->role,
+            'role' => 'staff', // Paksa secara sistem menjadi staff
             'password' => Hash::make($request->password),
         ]);
 
-        return redirect()->route('admin.users.index')->with('success', 'Akun pengguna berhasil dibuat!');
+        return redirect()->route('staff.users.index')->with('success', 'Akun Staff berhasil dibuat!');
     }
 
     public function edit(User $user)
     {
-        return view('admin.users.edit', compact('user'));
+        // Keamanan ekstra: cegah jika staff mencoba iseng akses URL edit milik admin
+        if ($user->role !== 'staff') {
+            abort(403, 'Akses Ditolak! Anda hanya bisa mengedit sesama Staff.');
+        }
+        return view('staff.users.edit', compact('user'));
     }
 
     public function update(Request $request, User $user)
     {
+        if ($user->role !== 'staff') abort(403, 'Akses Ditolak!');
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'role' => 'required',
             'new_password' => 'nullable|min:6'
         ]);
 
         $user->name = $request->name;
         $user->email = $request->email;
-        $user->role = $request->role;
 
+        // Jika form password baru diisi, ubah passwordnya
         if ($request->filled('new_password')) {
             $user->password = Hash::make($request->new_password);
         }
 
         $user->save();
 
-        return redirect()->route('admin.users.index')->with('success', 'Data akun berhasil diperbarui!');
+        return redirect()->route('staff.users.index')->with('success', 'Data akun berhasil diperbarui!');
     }
 
     public function destroy(User $user)
     {
+        if ($user->role !== 'staff') abort(403, 'Akses Ditolak!');
 
         $user->delete();
         return back()->with('success', 'Akun berhasil dihapus.');
     }
-
-    public function export()
-    {
-        return Excel::download(new UserExport, 'users.xlsx');
-    }
 }
-

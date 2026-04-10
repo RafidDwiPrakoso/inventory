@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ItemCategory;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\Admin\CategoryExport;
 
 class CategoryController extends Controller
 {
@@ -46,6 +48,11 @@ class CategoryController extends Controller
         $category->update($request->all());
 
         return redirect()->route('admin.categories.index')->with('success', 'Kategori berhasil diperbarui!');
+    }
+
+    public function export()
+    {
+        return Excel::download(new CategoryExport, 'categories.xlsx');
     }
 }
 

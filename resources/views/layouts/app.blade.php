@@ -52,7 +52,7 @@
             <a href="{{ route('admin.users.index')}}"
                 class="{{ request()->routeIs('staff.users.*') ? 'active' : ''}}"><i class="bi bi-people me-2"></i>
                 Users</a>
-        @else
+        @elseif (auth()->user()->role === 'headstaff')
             <a href="{{ route('staff.dashboard')}}"
                 class="{{ request()->routeIs('staff.dashboard.*') ? 'active' : ''}}"><i class="bi bi-speedometer2 me-2"></i>
                 Dashboard</a>
@@ -62,6 +62,13 @@
             <a href="{{ route('staff.users.index')}}"
                 class="{{ request()->routeIs('staff.users.*') ? 'active' : ''}}"><i
                     class="bi bi-person-circle me-2"></i> User</a>
+        @elseif (auth()->user()->role === 'staff')
+            <a href="{{ route('staff.dashboard')}}"
+                class="{{ request()->routeIs('staff.dashboard.*') ? 'active' : ''}}"><i class="bi bi-speedometer2 me-2"></i>
+                Dashboard</a>
+            <a href="{{ route('staff.borrows.index')}}"
+                class="{{ request()->routeIs('staff.borrows.*') ? 'active' : ''}}"><i class="bi bi-arrow-left-right me-2"></i>
+                Borrow</a>  
         @endif
     </div>
 

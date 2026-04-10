@@ -18,6 +18,13 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::create([
+            'name' => 'Kepala Staff Sarpras',
+            'email' => 'headstaff@wikrama.sch.id',
+            'role' => 'headstaff',
+            'password' => Hash::make('password123'),
+        ]);
+
+        User::create([
             'name' => 'Staff Gudang',
             'email' => 'staff@gmail.com',
             'role' => 'staff',

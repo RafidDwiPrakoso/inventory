@@ -9,38 +9,23 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class UserExport implements FromCollection, WithHeadings, WithMapping
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
     public function collection()
     {
-        return User::all();
+        return User::latest()->get();
     }
 
-    /**
-     * @return array
-     */
-    public function headings(): array
-    {
-        return [
-            'No',
-            'Nama Pengguna',
-            'Email',
-            'Role',
-        ];
-    }
-
-    /**
-     * @return array
-     */
     public function map($user): array
     {
         return [
-            $user->id,
             $user->name,
             $user->email,
-            ucfirst($user->role),
+            strtoupper($user->role),
+            $user->created_at->format('d M Y')
         ];
     }
-}
 
+    public function headings(): array
+    {
+        return ['Nama Lengkap', 'Email', 'Role / Hak Akses', 'Tanggal Terdaftar'];
+    }
+}
